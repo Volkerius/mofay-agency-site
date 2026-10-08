@@ -1,0 +1,492 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Tasarım Sistemi
+   Koyu tema tek yönlü kurgulandı. Renk, tipografi ve hareket burada tanımlı.
+   ========================================================================== */
+
+@theme {
+  /* Zemin katmanları — en koyudan en açığa */
+  --color-ink-950: #050609;
+  --color-ink-900: #080a10;
+  --color-ink-850: #0b0e16;
+  --color-ink-800: #10131d;
+  --color-ink-700: #171b28;
+  --color-ink-600: #222739;
+
+  /* Metin */
+  --color-fg: #eef0f6;
+  --color-fg-muted: #9aa1b8;
+  /* WCAG AA: #676e86 koyu zeminde 4.0:1 veriyordu, eşik 4.5. */
+  --color-fg-dim: #7b8299;
+
+  /* Marka renkleri */
+  --color-brand-violet: #7c5cff;
+  --color-brand-indigo: #5b6cff;
+  --color-brand-cyan: #22d3ee;
+  --color-brand-pink: #f472b6;
+  --color-brand-amber: #fbbf24;
+  --color-brand-emerald: #34d399;
+
+  /* Tipografi */
+  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-jb), ui-monospace, monospace;
+
+  /* Hareket */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+
+  --animate-marquee: marquee 42s linear infinite;
+  --animate-marquee-reverse: marquee-reverse 42s linear infinite;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-pulse-ring: pulse-ring 2.6s ease-out infinite;
+  --animate-shimmer: shimmer 2.4s linear infinite;
+  --animate-caret: caret 1.1s steps(1) infinite;
+  --animate-aurora: aurora 22s ease-in-out infinite alternate;
+
+  @keyframes marquee {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(-50%, 0, 0); }
+  }
+  @keyframes marquee-reverse {
+    from { transform: translate3d(-50%, 0, 0); }
+    to { transform: translate3d(0, 0, 0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.85); opacity: 0.7; }
+    70% { transform: scale(1.9); opacity: 0; }
+    100% { transform: scale(1.9); opacity: 0; }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes caret {
+    0%, 45% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+  @keyframes aurora {
+    0%   { transform: translate3d(-6%, -4%, 0) scale(1); }
+    50%  { transform: translate3d(5%, 6%, 0) scale(1.18); }
+    100% { transform: translate3d(-3%, 5%, 0) scale(1.05); }
+  }
+
+  /* Hero girişi — bilerek CSS, Framer Motion değil.
+     JS ile yapılınca öğeler opacity:0 olarak basılıp hidrasyonu bekliyor
+     ve LCP ~1.5sn geç ölçülüyordu. CSS ilk karede başlar, JS beklemez. */
+  @keyframes hero-in {
+    from { opacity: 0; transform: translate3d(0, 22px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+
+  /* Kaydırmaya bağlı açılış animasyonları (aşağıdaki .reveal-* sınıfları) */
+  @keyframes reveal-up    { from { opacity: 0; transform: translate3d(0, 26px, 0); } }
+  @keyframes reveal-left  { from { opacity: 0; transform: translate3d(30px, 0, 0); } }
+  @keyframes reveal-right { from { opacity: 0; transform: translate3d(-30px, 0, 0); } }
+  @keyframes reveal-fade  { from { opacity: 0; } }
+  @keyframes reveal-char  { from { transform: translate3d(0, 112%, 0); } }
+  @keyframes reveal-clip {
+    from { clip-path: inset(100% 0 0 0 round 1rem); transform: scale(1.08); }
+  }
+
+  /* Framer Motion'dan CSS'e taşınan efektler */
+  @keyframes grow-x   { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes grow-y   { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+  @keyframes pop-in   { from { opacity: 0; transform: scale(0.96); } }
+  @keyframes word-in  { from { opacity: 0; transform: translateY(65%); } }
+  @keyframes hero-out { to { opacity: 0; transform: translateY(90px) scale(0.96); } }
+  @keyframes work-pan { to { transform: translateX(calc(-100% + 100vw)); } }
+  @keyframes nudge {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(7px); }
+  }
+  --animate-nudge: nudge 1.9s ease-in-out infinite;
+}
+
+/* --------------------------------------------------------------------------
+   Temel katman
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  * {
+    border-color: color-mix(in oklab, var(--color-fg) 8%, transparent);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-gutter: stable;
+    /* Tarayıcının kendi çizdiği arayüzler (select açılır listesi, takvim,
+       kaydırma çubukları) koyu temada render edilsin. Bu olmadan Windows'ta
+       select listesi BEYAZ açılıyor ve açık renkli seçenek yazıları
+       okunmuyordu. */
+    color-scheme: dark;
+    /* Çapa ofseti BURADA DEĞİL, bölümlerdeki scroll-mt-24'te.
+       İkisi birden olunca üst üste biniyordu: her çapa tıklaması hedefin
+       192px yukarısına iniyor, önceki bölümün ortası görünüyordu.
+       html'e overflow-x de verme: Safari'de çapa kaydırmasını bozuyor;
+       yatay taşma kilidi body'de duruyor. */
+  }
+
+  body {
+    background-color: var(--color-ink-950);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+  }
+
+  /* Lenis yumuşak kaydırma devredeyken native smooth kapalı olmalı */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-brand-violet) 45%, transparent);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-cyan);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* İnce, temaya uygun kaydırma çubuğu */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-ink-950);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-ink-700);
+    border-radius: 99px;
+    border: 3px solid var(--color-ink-950);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-ink-600);
+  }
+
+  /* Kullanıcı hareket azaltma isterse tüm animasyonlar susar */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+
+  /* Select seçenekleri — color-scheme'i desteklemeyen/yoksayan tarayıcılar
+     için açık yedek: koyu zemin + açık yazı. */
+  select option {
+    background-color: var(--color-ink-800);
+    color: var(--color-fg);
+  }
+
+  /* Otomatik doldurmada tarayıcının beyaz zemin basmasını engelle */
+  input:-webkit-autofill,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: var(--color-fg);
+    -webkit-box-shadow: 0 0 0 1000px var(--color-ink-800) inset;
+    transition: background-color 9999s ease-in-out 0s;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Yardımcı sınıflar
+   -------------------------------------------------------------------------- */
+
+@utility container-page {
+  width: 100%;
+  margin-inline: auto;
+  max-width: 80rem;
+  padding-inline: 1.25rem;
+  @media (min-width: 640px) { padding-inline: 2rem; }
+  @media (min-width: 1024px) { padding-inline: 2.5rem; }
+}
+
+/* Marka gradyanlı metin */
+@utility text-gradient {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-brand-violet) 0%,
+    var(--color-brand-indigo) 35%,
+    var(--color-brand-cyan) 70%,
+    var(--color-brand-pink) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Cam yüzey — kart ve header için */
+@utility surface-glass {
+  background: color-mix(in oklab, var(--color-ink-850) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid color-mix(in oklab, var(--color-fg) 8%, transparent);
+}
+
+/* Hover'da renklenen ince kenarlık */
+@utility surface-card {
+  position: relative;
+  background: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--color-ink-800) 90%, transparent),
+    color-mix(in oklab, var(--color-ink-900) 96%, transparent)
+  );
+  border: 1px solid color-mix(in oklab, var(--color-fg) 7%, transparent);
+  transition: border-color 0.4s var(--ease-out-expo),
+    transform 0.4s var(--ease-out-expo);
+}
+
+/* Nokta ızgara zemin */
+@utility bg-grid {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--color-fg) 9%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 28px 28px;
+}
+
+/* Çizgi ızgara zemin */
+@utility bg-lines {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--color-fg) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-fg) 4%, transparent) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* Kenarları yumuşatan maske — marquee ve yatay listelerde */
+@utility mask-fade-x {
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+@utility mask-fade-b {
+  mask-image: linear-gradient(to bottom, black 55%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent);
+}
+
+/* Yatay kaydırma alanlarında kaydırma çubuğunu gizle */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Film grenli doku — düz gradyanların plastik durmasını engeller */
+@utility noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* --------------------------------------------------------------------------
+   Kaydırmaya bağlı açılış animasyonları — TAMAMEN CSS
+   --------------------------------------------------------------------------
+   Bunlar bilerek JavaScript'siz. Framer Motion'ın whileInView'ı öğeleri
+   sunucu HTML'ine opacity:0 olarak basıyordu; içerik hidrasyon bitene kadar
+   görünmüyordu. Masaüstünde fark edilmiyor ama telefonda 15 saniye sürüyordu.
+
+   CSS ilk karede çalışır, JS beklemez. Tarayıcı scroll-driven animasyonu
+   desteklemiyorsa (eski Safari/Firefox) animasyon olmaz, içerik ANINDA
+   görünür — yani en kötü durumda bile kullanıcı içeriği görür.
+   -------------------------------------------------------------------------- */
+
+.reveal,
+.reveal-l,
+.reveal-r,
+.reveal-f {
+  /* Varsayılan: görünür. Animasyon ancak destek varsa devreye girer. */
+  opacity: 1;
+}
+
+/* SADECE genis ekran: telefonda kaydirma animasyonu yok, icerik ANINDA
+   gorunur. Zayif cihazda "ekrana girince belirme" gec geliyormus hissi
+   veriyor ve kaydirmayi agirlastiriyordu — kullanici sikayeti dogrudan buydu. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) and (min-width: 640px) {
+    .reveal,
+    .reveal-l,
+    .reveal-r,
+    .reveal-f,
+    .reveal-clip {
+      animation-timeline: view();
+      animation-fill-mode: both;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+      /* --d: kademelendirme (0,1,2...). Aralığı kaydırarak sıra oluşturur;
+         scroll animasyonlarında animation-delay çalışmaz. */
+      animation-range: entry calc(4% + var(--d, 0) * 5%)
+                       entry calc(62% + var(--d, 0) * 5%);
+    }
+    .reveal      { animation-name: reveal-up; }
+    .reveal-l    { animation-name: reveal-left; }
+    .reveal-r    { animation-name: reveal-right; }
+    .reveal-f    { animation-name: reveal-fade; }
+    .reveal-clip { animation-name: reveal-clip; }
+  }
+}
+
+/* Harf harf açılan başlık — maskeli satır içinde her harf alttan yükselir.
+   Sadece geniş ekranda: telefonda 240+ harfin her biri ayrı kaydırma
+   animasyonu takibi demek, düşük donanımda kaydırmayı teklettiriyor.
+   Mobilde başlıklar animasyonsuz ama ANINDA görünür. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) and (min-width: 640px) {
+    .reveal-char {
+      animation-name: reveal-char;
+      animation-timeline: view();
+      animation-fill-mode: both;
+      animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+      animation-range: entry calc(6% + var(--i, 0) * 1.1%)
+                       entry calc(58% + var(--i, 0) * 1.1%);
+    }
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Kaydırma zaman çizelgesine bağlı efektler — eskiden Framer Motion'dı.
+   JS bundle'ından ~90KB kütüphaneyi atmak için CSS scroll-driven animation
+   kullanılıyor. Desteklemeyen tarayıcıda her birinin güvenli geri düşüşü var.
+   -------------------------------------------------------------------------- */
+
+/* Sayfa üstü ilerleme çubuğu — destek yoksa çubuk hiç görünmez (süs zaten) */
+.scroll-progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    display: block;
+    transform-origin: left;
+    animation: grow-x linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+/* Süreç bölümündeki dikey çizgi — destek yoksa çizgi dolu durur */
+.process-line { transform-origin: top; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .process-line {
+      animation: grow-y linear both;
+      animation-timeline: view();
+      animation-range: entry 20% exit 80%;
+    }
+  }
+}
+
+/* İşlerimiz: masaüstünde sabitlenip yana kayan ray.
+   Dış kap dikey ilerleme sağlar (view-timeline), ray o ilerlemeye göre
+   translateX olur. Destek yoksa masaüstü sürümü gizlenir, mobil kaydırma
+   listesi her boyutta gösterilir — kimse içeriksiz kalmaz. */
+@supports (animation-timeline: view()) {
+  @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+    .work-outer { view-timeline: --work block; }
+    .work-track {
+      animation: work-pan linear both;
+      animation-timeline: --work;
+      animation-range: contain 0% contain 100%;
+    }
+    .work-bar {
+      transform-origin: left;
+      animation: grow-x linear both;
+      animation-timeline: --work;
+      animation-range: contain 0% contain 100%;
+    }
+  }
+}
+@supports not (animation-timeline: view()) {
+  .work-outer { display: none !important; }
+  .work-fallback { display: block !important; }
+}
+
+/* Hero içeriği kaydırdıkça geriye çekilir — yalnızca masaüstü + destek */
+@supports (animation-timeline: view()) {
+  @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+    .hero-stage { view-timeline: --hero block; }
+    .hero-parallax {
+      animation: hero-out linear both;
+      animation-timeline: --hero;
+      animation-range: exit 0% exit 85%;
+    }
+  }
+}
+
+/* Akordiyon yükseklik animasyonu — grid satırı 0fr -> 1fr hilesi */
+.acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s var(--ease-out-expo);
+}
+.acc-panel[data-open="true"] { grid-template-rows: 1fr; }
+.acc-inner { overflow: hidden; min-height: 0; }
+
+/* Form başarı ekranı belirmesi */
+.pop-in { animation: pop-in 0.4s var(--ease-out-expo) both; }
+
+/* Dönen kelimenin girişi */
+.word-in { animation: word-in 0.5s var(--ease-out-expo) both; }
+
+/* Hero giriş sarmalayıcısı — çocuklarına sırayla gecikme verir.
+   Toplam süre kısa tutuldu (son öğe 0.34sn'de başlar): LCP'yi geciktirmemeli. */
+@utility hero-stagger {
+  & > * {
+    animation: hero-in 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  & > *:nth-child(1) { animation-delay: 0.02s; }
+  & > *:nth-child(2) { animation-delay: 0.08s; }
+  & > *:nth-child(3) { animation-delay: 0.16s; }
+  & > *:nth-child(4) { animation-delay: 0.24s; }
+  & > *:nth-child(5) { animation-delay: 0.30s; }
+  & > *:nth-child(6) { animation-delay: 0.34s; }
+}
+
+/* Harf harf açılan başlıklarda satır maskesi.
+   padding + eşit negatif margin: alt uzantılar (g, y, ş, ğ) kırpılmasın
+   ama satır yüksekliği değişmesin — yoksa düzen kayar (CLS). */
+@utility line-mask {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
+}
+
+/* Işıltı geçen kenarlık — birincil butonda kullanılıyor */
+@utility shimmer-border {
+  background-image: linear-gradient(
+    110deg,
+    transparent 25%,
+    color-mix(in oklab, var(--color-fg) 55%, transparent) 50%,
+    transparent 75%
+  );
+  background-size: 200% 100%;
+}
